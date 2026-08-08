@@ -1,1 +1,4 @@
-titulo,autor,ano,codigo,status
+titulo,autor,ano,isbn,disponivel
+Livro,Autor,2026,9786599876500,Indisponivel
+Livro,Eu,1020,9786599876501,Indisponivel
+asodjasods,siodjsaiofjso,2020,9786599876502,Indisponivel
