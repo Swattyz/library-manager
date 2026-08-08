@@ -4,10 +4,12 @@ os.system("cls")
 
 estrutura = ['titulo', 'autor', 'ano', 'isbn', 'disponivel']
 
+# FUNÇÕES
+
 def cadastrar_livro(titulo,autor,ano):
     book_qty = int(0)
     
-    with open('library-manager/sheet.csv', 'r') as file:
+    with open('sheet.csv', 'r') as file:
         for line in file:
             book_qty += 1
             isbn = int(9786599876500) + (book_qty-1)
@@ -18,36 +20,56 @@ def cadastrar_livro(titulo,autor,ano):
     998765 --> código-exemplo que indica editoras pequenas 
     00 --> código que indica qual livro é (o primeiro livro é 00, o segundo registrado será 01, etc.)'''
 
-    with open('library-manager/sheet.csv','a',newline='') as f:
+    with open('sheet.csv','a',newline='') as f:
             produto = {'titulo':titulo, 'autor':autor, 'ano':ano, 'isbn':isbn, 'disponivel':"Disponivel"}
             writer = csv.DictWriter(f,fieldnames=estrutura)
             writer.writerow(produto)
 
     return "\nLivro cadastrado!"
 
-def registrar_emprestimo(isbn):
+def emprestimo_devolucao(isbn, mode):
     lines = []
-    found = int(0)
+    was_found = 0
 
-    with open("library-manager/sheet.csv", "r", newline='') as file:
+    with open("sheet.csv", "r", newline='') as file:
         reader = csv.reader(file)
         for items in reader:
             if items[3] == isbn:
-                found = int(1)
-                if items[4] == "Disponivel":
-                    items[4] = "Indisponivel"
+                was_found = 1
+
+                if mode == "Emprestimo":
+                    if items[4] == "Disponivel":
+                        items[4] = "Indisponivel"
+                    else:
+                        return "\nEsse livro não está disponível!"
+                    
                 else:
-                    return "\nEsse livro não está disponível!"
+                    if items[4] == "Indisponivel":
+                        items[4] = "Disponivel"
+                    else:
+                        return "\nEsse livro já está disponível!"
+                    
             lines.append(items)
 
-    with open("library-manager/sheet.csv", "w", newline='') as file:
+    with open("sheet.csv", "w", newline='') as file:
         writer = csv.writer(file)
         writer.writerows(lines)
 
-    if found == 1:
+    if was_found == 1:
         return "\nLivro emprestado com sucesso."
     else:
         return "\nNenhum livro encontrado!"
+
+def listar_livros():
+    with open("sheet.csv", "r") as file:
+        reader = csv.DictReader(file)
+        counter = 1
+
+        for line in reader:
+            print(f"\n{counter}. {line["titulo"]} por {line["autor"]} em {line["ano"]} \nISBN: {line["isbn"]} | Status: {line["disponivel"]}")
+            counter += 1
+
+# CÓDIGO PRINCIPAL
 
 print ("==== SISTEMA DE GERENCIAMENTO DE BIBLIOTECA ====" \
 "\nBem vindo ao gerenciador de livros da biblioteca, o que deseja fazer?")
@@ -68,12 +90,12 @@ while True:
 
     match choice:
         case 1:
-            titulo = input("\nTítulo do livro: ")
-            autor = input("Autor do livro: ")
+            titulo = input("\n- Título do livro: ")
+            autor = input("- Autor do livro: ")
 
             while True:
                 try: 
-                    ano = int(input("Ano do livro: "))
+                    ano = int(input("- Ano do livro: "))
                     if ano > 2026 or ano < 0:
                         print("Valor do ano muito alto ou muito baixo! Tente novamente.\n")
                         continue
@@ -83,10 +105,15 @@ while True:
                     continue
             print(cadastrar_livro(titulo,autor,ano))
 
-        case 2:
+        case 2 | 3:
             while True:
+                if choice == 2:
+                    mode = "Emprestimo"
+                else:
+                    mode = "Devolucao"
+                
                 try:
-                    isbn = int(input("Insira o ISBN do livro: "))
+                    isbn = int(input("\nInsira o ISBN do livro: "))
                 except:
                     print("Não é um ISBN com formato válido!\n")
                     continue
@@ -95,16 +122,20 @@ while True:
                     print("ISBN inválido!\n")
                     continue
                 break
-            print(registrar_emprestimo(str(isbn)))
-        case 3:
-            pass
+            print(emprestimo_devolucao(str(isbn), mode))
+
         case 4:
-            pass
+            listar_livros()
+
         case 5:
             pass
+
         case 6:
             pass
+
         case 7:
+            print("\nSistema encerrado.")
             break
+
         case _:
             print("Opção inválida! Tente novamente.\n")
