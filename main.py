@@ -71,10 +71,16 @@ def listar_livros():
             print(f"\n{counter}. '{line["titulo"]}' por {line["autor"]} em {line["ano"]} \nISBN: {line["isbn"]} | Status: {line["disponivel"]}")
             counter += 1
 
+        if counter == 1:
+            return print("\nNão há livros cadastrados.")
+        else:
+            return(f"\n{counter-1} livro(s) sendo mostrado(s).")
+
 def buscar_livro(value,mode):
     with open("livros.csv", "r") as file:
         counter = 1
         reader = csv.reader(file)
+        next(reader)
 
         for line in reader:
             if str(line[mode]) == value:
@@ -82,7 +88,25 @@ def buscar_livro(value,mode):
                 counter += 1
 
         if counter == 1:
-            print("\nLivro não encontrado.")
+            return print("\nLivro não encontrado.")
+        else:
+            return(f"\n{counter-1} livro(s) encontrado(s).")
+
+def ordenar_listagem(mode):
+    with open("livros.csv", "r") as file:
+        counter = 1
+        reader = csv.reader(file)
+        next(reader)
+        livros = list(reader)
+
+        if mode == 2:
+            livros.sort(key=lambda livros: int(livros[mode]))
+        else:
+            livros.sort(key=lambda livros: livros[mode])
+
+        for line in livros:
+            print (f"\n{counter}. '{line[0]}' por {line[1]} em {line[2]} \nISBN: {line[3]} | Status: {line[4]}")
+            counter += 1
 
 # CÓDIGO PRINCIPAL
 
@@ -180,7 +204,24 @@ while True:
                 break
 
         case 6:
-            pass
+            while True:
+                try:
+                    mode = int(input("\nQual ordem de listagem deseja?" \
+                    "\n[0] ---> Ordem por título" \
+                    "\n[1] ---> Ordem por autoria" \
+                    "\n[2] ---> Ordem por ano" \
+                    "\n --> "))
+                except:
+                    print("Valor inválido! Tente novamente.\n")
+                    continue
+
+                if mode not in [0,1,2]:
+                    print(f"'{mode}' inválido! Tente novamente.\n")
+                    continue
+
+                ordenar_listagem(mode)
+                input("\n(Pressione 'Enter' para continuar)\n")
+                break
 
         case 7:
             print("\n- SISTEMA ENCERRADO -")
@@ -188,3 +229,9 @@ while True:
 
         case _:
             print("Opção inválida! Tente novamente.\n")
+
+
+'''
+Os input "Pressione 'Enter' para continuar" foram adicionados por mim a fim de deixar o código mais confortável pra ler com um ritmo mais lento
+--> Por quê muitas vezes o menu/resposta aparecia logo depois e ocupava muito a tela antes de poder ler o que o código respondeu
+'''
