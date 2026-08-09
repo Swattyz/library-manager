@@ -6,19 +6,31 @@ estrutura = ['titulo', 'autor', 'ano', 'isbn', 'disponivel']
 
 # FUNÇÕES
 
-def cadastrar_livro(titulo,autor,ano):
-    book_qty = int(0)
-    
-    with open('livros.csv', 'r') as file:
-        for line in file:
-            book_qty += 1
-            isbn = int(9786599876500) + (book_qty-1)
+def gerar_isbn():
+    with open("livros.csv", "r") as file:
+        livros = csv.DictReader(file) # Lê em formato de dicionário (desconsidera a headline dentro do .CSV)
+        maior = 0
 
-    '''Sobre o ISBN (tentei me basear no sistema do código ISBN real):
-    978 --> padrão de início de 3 dígitos para livros
-    65 --> código que indica a região do livro (nesse caso, Brasil)
-    998765 --> código-exemplo que indica editoras pequenas 
-    00 --> código que indica qual livro é (o primeiro livro é 00, o segundo registrado será 01, etc.)'''
+        if not livros: # Se a lista (conteúdo dentro do .CSV) estiver vazia (não tem livros cadastrados)
+
+            '''Sobre o ISBN (tentei me basear no sistema do código ISBN real):
+            978 --> padrão de início de 3 dígitos para livros
+            65 --> código que indica a região do livro (nesse caso, Brasil)
+            998765 --> código-exemplo que indica editoras pequenas 
+            00 --> código que indica qual livro é (o primeiro livro é 00, o segundo registrado será 01, etc.)'''
+            
+            return 9786599876500 # Retorna o pádrão inicial
+
+        else: # Caso tenha livros no .CSV
+            for livro in livros:
+                if int(livro["isbn"]) > maior:
+                    maior = int(livro["isbn"])
+            # Verifica o maior ISBN entre todos os livros dentro do .CSV
+
+            return (maior) + 1 # Retorna o maior ISBN no .CSV, adicionando +1 para ser utilizado no cadastro de um livro
+
+def cadastrar_livro(titulo,autor,ano):
+    isbn = gerar_isbn() # Usa a função para gerar um ISBN novo que não exista
 
     with open('livros.csv','a',newline='') as f:
             produto = {'titulo':titulo, 'autor':autor, 'ano':ano, 'isbn':isbn, 'disponivel':"Disponivel"}
@@ -108,6 +120,27 @@ def ordenar_listagem(mode):
             print (f"\n{counter}. '{line[0]}' por {line[1]} em {line[2]} \nISBN: {line[3]} | Status: {line[4]}")
             counter += 1
 
+def descadastrar_livro(isbn):
+    lines = []
+    was_found = 0
+
+    with open("livros.csv", "r", newline='') as file:
+        reader = csv.reader(file)
+        for items in reader:
+            if items[3] != str(isbn):
+                lines.append(items)
+            else:
+                was_found = 1
+
+    with open("livros.csv", "w", newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(lines)
+
+    if was_found == 0:
+        return f"\nNão há livros encontrados com o ISBN '{isbn}'!"
+    else:
+        return f"\nLivro cujo ISBN é '{isbn}' foi removido do catálogo."
+
 # CÓDIGO PRINCIPAL
 
 print ("==== SISTEMA DE GERENCIAMENTO DE BIBLIOTECA ====" \
@@ -121,7 +154,8 @@ while True:
         "\n[4] --- LISTAR LIVROS" \
         "\n[5] --- BUSCA DE LIVRO" \
         "\n[6] --- ORDENAR LISTAGEM" \
-        "\n[7] --- SAIR" \
+        "\n[7] --- DESCADASTRAR LIVRO" \
+        "\n[8] --- SAIR" \
         "\n--> "))
     except:
         print("Opção inválida!\n")
@@ -129,18 +163,28 @@ while True:
 
     match choice:
         case 1:
-            titulo = input("\n- Título do livro: ")
-            autor = input("- Autor do livro: ")
-
             while True:
+                titulo = input("\n- Título do livro: ")
+
+                if titulo.strip() == "":
+                    print("\nO título não pode ser vazio!")
+                    continue
+
+                autor = input("- Autor do livro: ")
+
+                if autor.strip() == "":
+                    print("\nO nome do autor não pode ser vazio!")
+                    continue
+
                 try: 
                     ano = int(input("- Ano do livro: "))
                     if ano > 2026 or ano < 0:
                         print("Valor do ano muito alto ou muito baixo! Tente novamente.\n")
                         continue
                     break
+
                 except:
-                    print("Valor inválido!\n")
+                    print("\nValor inválido!")
                     continue
             print(cadastrar_livro(titulo,autor,ano))
             input("\n(Pressione 'Enter' para continuar)\n")
@@ -155,15 +199,16 @@ while True:
                 try:
                     isbn = int(input("\n- Insira o ISBN do livro: "))
                 except:
-                    print(f"'{isbn}' não é um ISBN com formato válido!\n")
+                    print(f"Não é um ISBN com formato válido!\n")
                     continue
 
                 if len(str(isbn)) != 13:
                     print("ISBN inválido!\n")
                     continue
+
+                print(emprestimo_devolucao(str(isbn), mode))
+                input("\n(Pressione 'Enter' para continuar)\n")
                 break
-            print(emprestimo_devolucao(str(isbn), mode))
-            input("\n(Pressione 'Enter' para continuar)\n")
 
         case 4:
             listar_livros()
@@ -199,6 +244,10 @@ while True:
                 else:
                     value = input("\nDeclare o valor que queira buscar: ")
 
+                    if value.strip() == "":
+                        print("\nO valor não pode ser vazio!")
+                        continue
+
                 buscar_livro(value,mode)
                 input("\n(Pressione 'Enter' para continuar)\n")
                 break
@@ -224,6 +273,22 @@ while True:
                 break
 
         case 7:
+                while True:
+                    try:
+                        isbn = int(input("\n- Insira o ISBN do livro: "))
+                    except:
+                        print(f"Não é um ISBN com formato válido!\n")
+                        continue
+
+                    if len(str(isbn)) != 13:
+                        print("ISBN inválido!\n")
+                        continue
+
+                    print(descadastrar_livro(isbn))
+                    input("\n(Pressione 'Enter' para continuar)\n")
+                    break
+
+        case 8:
             print("\n- SISTEMA ENCERRADO -")
             break
 
