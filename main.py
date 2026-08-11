@@ -5,8 +5,10 @@ from modules.listar_livros import listar_livros
 from modules.descadastrar_livro import descadastrar_livro
 from modules.emprestar_devolver_livros import emprestimo_devolucao
 from modules.ordernar_listagem import ordenar_listagem
+from modules.checar_titulo import checar_titulo
+from modules.estoque_livro import estoque_livro
 
-# Importa os módulos com as funções que serão usadas da pasta "modules"
+# Importa as funções que serão usadas de uma pasta com os módulos
 
 os.system("cls") # Limpa o conteúdo atual do terminal
 
@@ -26,7 +28,9 @@ while True:
         "\n[5] --- BUSCA DE LIVRO" \
         "\n[6] --- ORDENAR LISTAGEM" \
         "\n[7] --- DESCADASTRAR LIVRO" \
-        "\n[8] --- SAIR" \
+        "\n[8] --- AUMENTAR ESTOQUE DE LIVRO" \
+        "\n[9] --- REDUZIR ESTOQUE DE LIVRO" \
+        "\n[0] --- SAIR" \
         "\n--> "))
         # Menu de opções do código para cada função
     except ValueError:
@@ -40,6 +44,10 @@ while True:
 
                 if titulo.strip() == "":
                     print("\nO título não pode ser vazio!")
+                    continue
+
+                elif checar_titulo(titulo):
+                    print("\nJá está cadastrado um livro cujo título é exatamente igual!")
                     continue
 
                 autor = input("- Autor do livro: ")
@@ -59,10 +67,10 @@ while True:
                     continue
 
                 try:
-                    isbn = int(input("- ISBN do livro: "))
+                    isbn = int(input("- ISBN do livro (13 dígitos): "))
 
-                    if len(str(isbn)) > 13: # Verifica se o ISBN não é grande demais
-                        print("Esse ISBN é muito grande!\n")
+                    if len(str(isbn)) != 13: # Verifica se o ISBN tem um tamanho correto (de acordo com pesquisas, ISBNs atuais obrigatoriamente possuem 13 dígitos)
+                        print(f"Esse ISBN possui {len(str(isbn))} dígito(s), certifique de que seu ISBN tenha 13 dígitos!\n")
                         continue
 
                     break
@@ -74,16 +82,19 @@ while True:
             input("\n(Pressione 'Enter' para continuar)\n")
 
         case 2 | 3: # Empréstimo e devolução de livro
+            if choice == 2:
+                mode = "Emprestimo"
+            else:
+                mode = "Devolucao"
+            # Checagem e declaração do modo pedido
+            
             while True:
-                if choice == 2:
-                    mode = "Emprestimo"
-                else:
-                    mode = "Devolucao"
-                # Checagem e declaração do modo pedido
-                
-                title = input("\n- Insira o título do livro: ")
+                titulo = input("\n- Insira o título do livro: ")
+                if titulo.strip() == "":
+                    print("\nO título não pode ser vazio!")
+                    continue
 
-                print(emprestimo_devolucao(title, mode)) # Chama a função de empréstimo e devolução de livros
+                print(emprestimo_devolucao(titulo, mode)) # Chama a função de empréstimo e devolução de livros
                 input("\n(Pressione 'Enter' para continuar)\n")
                 break
 
@@ -148,18 +159,38 @@ while True:
                 break
 
         case 7: # Descadastro/remoção de livro do catálogo
-                while True:
-                    try:
-                        isbn = int(input("\n- Insira o ISBN do livro: "))
-                    except ValueError:
-                        print(f"Não é um ISBN com formato válido!\n")
-                        continue
+            while True:
+                titulo = input("\n- Insira o título do livro que deseja descadastrar: ")
+                if titulo.strip() == "":
+                    print("\nO título não pode ser vazio!")
+                    continue
 
-                    print(descadastrar_livro(isbn)) # Chama a função de descadastro de livro
-                    input("\n(Pressione 'Enter' para continuar)\n")
-                    break
+                print(descadastrar_livro(titulo)) # Chama a função de descadastro de livro
+                input("\n(Pressione 'Enter' para continuar)\n")
+                break
 
-        case 8: # Encerra o sistema com break, finalizando o loop e encerrando o programa
+        case 8 | 9: # Alteração de estoque em algum livro
+            if choice == 8: # Configura o modo para o uso da função
+                mode = "Aumentar"
+            else:
+                mode = "Reduzir"
+
+            while True:
+                titulo = input("\n- Insira o título do livro que deseja alterar estoque: ")
+                if titulo.strip() == "":
+                    print("O título não pode ser vazio!\n")
+                    continue
+
+                try:
+                    value = int(input("\n- Insira a quantidade que deseja alterar no estoque: "))
+                except ValueError:
+                    print("O valor inserido para a quantidade foi inválido!\n")
+
+                print(estoque_livro(titulo,mode,value)) # Chama a função para alterar o estoque
+                input("\n(Pressione 'Enter' para continuar)\n")
+                break
+
+        case 0: # Encerra o sistema com break, finalizando o loop e encerrando o programa
             print("\n- SISTEMA ENCERRADO -")
             break
 
@@ -168,6 +199,13 @@ while True:
 
 
 '''
-Os input "Pressione 'Enter' para continuar" foram adicionados por mim a fim de deixar o código mais confortável pra ler com um ritmo mais lento
+NOTAS:
+
+Os 'input("Pressione 'Enter' para continuar")' foram adicionados por mim a fim de deixar o código mais confortável pra ler com um ritmo mais lento
 --> Por quê muitas vezes o menu/resposta aparecia logo depois e ocupava muito a tela antes de poder ler o que o código respondeu
+
+Sobre o checar_titulo: Embora concordo que deve haver livros com títulos semelhantes, possibilitar tal ocorrência causaria erros e maior tempo para resolvê-los no código,
+justamente devido ao caminho que escolhi de usar a quantidade de livros emprestados e disponíveis ao invés de cadastrar livro por livro no .CSV
+Portanto precisava de alguma informação dos livros que seja única para encontrá-la e usá-la a fim de obter precisão e deixar o programa estável e claro
+
 '''
