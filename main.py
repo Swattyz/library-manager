@@ -6,34 +6,7 @@ estrutura = ['titulo', 'autor', 'ano', 'isbn', 'disponivel'] # Estrutura-base da
 
 # FUNÇÕES DO CÓDIGO (são chamadas e usadas durante o funcionamento)
 
-def gerar_isbn(): # Gera um ISBN diferente de qualquer um dos livros que haja dentro do .CSV
-    with open("livros.csv", "r") as file:
-        livros = csv.DictReader(file) # Lê em formato de dicionário (desconsidera a headline dentro do .CSV)
-        maior = 0
-        existe_livro = False
-
-        for livro in livros:
-            existe_livro = True
-            # Se o dicionário (conteúdo dentro do .CSV) estiver com algum livro, torna a variável de verificação "existe_livro" como verdadeira
-
-            if int(livro["isbn"]) > maior:
-                maior = int(livro["isbn"])
-            # Verifica o maior ISBN entre todos os livros dentro do .CSV e guarda na variável "maior"
-
-        '''Sobre o ISBN (tentei me basear no sistema do código ISBN real):
-        978 --> padrão de início de 3 dígitos para livros
-        65 --> código que indica a região do livro (nesse caso, Brasil)
-        998765 --> código-exemplo que indica editoras pequenas 
-        00 --> código que indica qual livro é (o primeiro livro é 00, o segundo registrado será 01, etc.)'''
-
-        if not existe_livro: # Se a variável de existir livro detectou que não há nenhum livro
-            return 9786599876500 # Retorna o pádrão inicial
-
-        return (maior) + 1 # Retorna o maior ISBN no .CSV, adicionando +1 para ser utilizado no cadastro de um livro caso já haja livros dentro do .CSV
-
-def cadastrar_livro(titulo,autor,ano): # Cadastra um novo livro no catálogo dentro do arquivo .CSV
-    isbn = gerar_isbn() # Usa a função para gerar um ISBN novo que não exista
-
+def cadastrar_livro(titulo,autor,ano, isbn): # Cadastra um novo livro no catálogo dentro do arquivo .CSV
     with open('livros.csv','a',newline='') as f:
             produto = {'titulo':titulo, 'autor':autor, 'ano':ano, 'isbn':isbn, 'disponivel':"Disponivel"}
             # Cria um dicionário com as informações do futuro livro
@@ -43,6 +16,17 @@ def cadastrar_livro(titulo,autor,ano): # Cadastra um novo livro no catálogo den
             # Escreve/adiciona "produto" (o novo livro a ser cadastrado) dentro do .CSV após todas as linhas usando o modo "append" do open()
 
     return "\nLivro cadastrado!"
+
+def checar_isbn(isbn): # Função que checa se o ISBN já existe ou não
+    with open('livros.csv', 'r', newline='') as file:
+        reader = csv.reader(file)
+        x = False
+
+        for line in reader: # Para cada linha (lista de cada livro)
+            if line[3] == str(isbn): # Se o ISBN (posição 3 da lista) for igual ao ISBN
+                x = True # Coloca X pra Falso e retorna ele depois
+
+        return x
 
 def emprestimo_devolucao(isbn, mode): # Função flexível que registra empréstimo e devolução de livros no catálogo
     lines = []
@@ -105,10 +89,26 @@ def buscar_livro(value,mode): # Busca livros com base em alguma característica 
         reader = csv.reader(file)
         next(reader) # Pula a primeira linha (ignorando a headline do .CSV)
 
-        for line in reader:
-            if str(line[mode]) == value:
-                print (f"\n{counter}. '{line[0]}' por {line[1]} em {line[2]} \nISBN: {line[3]} | Status: {line[4]}")
-                counter += 1
+        if mode in [0,1]: # Caso a busca esteja sendo por autoria ou título
+            words = value.lower().split() # Cria uma lista com todas as palavras que foram buscadas
+
+            for line in reader: # Para cada livro(lista) dentro do .CSV
+                book = line[mode].lower().split() # Cria uma lista que contém todas as palavras do título de cada livro (altera todo loop)
+                found = True
+
+                for word in words: # Para cada palavra na lista de palavras que foram buscadas
+                    if word not in book: # Verifica se cada uma das palavras está ou não entre as palavras do título do livro
+                        found = False # Se qualquer palavra buscada não for encontrada no livro atual, retorna falso e acaba o loop imediatamente
+                        break
+
+                if found: # Se o livro for encontrado, mostra o livro
+                        print (f"\n{counter}. '{line[0]}' por {line[1]} em {line[2]} \nISBN: {line[3]} | Status: {line[4]}")
+                        counter += 1
+        else:
+            for line in reader:
+                if line[mode] == value:
+                    print (f"\n{counter}. '{line[0]}' por {line[1]} em {line[2]} \nISBN: {line[3]} | Status: {line[4]}")
+                    counter += 1
         # Para cada livro dentro do .CSV em formato de lista: se o valor da característica do livro escolhida for igual ao que foi pedido na busca, o livro é mostrado
 
         if counter == 1:
@@ -179,7 +179,7 @@ while True:
         "\n[8] --- SAIR" \
         "\n--> "))
         # Menu de opções do código para cada função
-    except:
+    except ValueError:
         print("Opção inválida!\n")
         continue
 
@@ -200,15 +200,31 @@ while True:
 
                 try: 
                     ano = int(input("- Ano do livro: "))
+
                     if ano > 2026 or ano < 0: # Se o valor do ano de lançamento do livro for maior que 2026 (ano atual) ou negativo/menor que zero
                         print("Valor do ano muito alto ou muito baixo! Tente novamente.\n")
                         continue
-                    break
-
-                except:
+                except ValueError:
                     print("\nValor inválido!")
                     continue
-            print(cadastrar_livro(titulo,autor,ano)) # Chama a função de cadastro de livros
+
+                try:
+                    isbn = int(input("- ISBN do livro: "))
+
+                    if len(str(isbn)) > 13: # Verifica se o ISBN não é grande demais
+                        print("Esse ISBN é muito grande!\n")
+                        continue
+
+                    elif checar_isbn(isbn): # Checa se o ISBN já existe ou não
+                        print("Esse ISBN já existe!\n")
+                        continue
+
+                    break
+
+                except ValueError:
+                    print("Valor inválido!\n")
+
+            print(cadastrar_livro(titulo,autor,ano, isbn)) # Chama a função de cadastro de livros
             input("\n(Pressione 'Enter' para continuar)\n")
 
         case 2 | 3: # Empréstimo e devolução de livro
@@ -221,12 +237,8 @@ while True:
                 
                 try:
                     isbn = int(input("\n- Insira o ISBN do livro: "))
-                except:
+                except ValueError:
                     print(f"Não é um ISBN com formato válido!\n")
-                    continue
-
-                if len(str(isbn)) != 13: # Se o tamanho (número de dígitos) do ISBN for diferente de 13, é inválido
-                    print("ISBN inválido!\n")
                     continue
 
                 print(emprestimo_devolucao(str(isbn), mode)) # Chama a função de empréstimo e devolução de livros
@@ -249,7 +261,7 @@ while True:
                     "\n[5] ---> Buscar por indísponível." \
                     "\n--> "))
                     # Menu de opções sobre o tipo de busca a ser feita
-                except:
+                except ValueError:
                     print(f"O valor dado não é válido!\n")
                     continue
 
@@ -286,7 +298,7 @@ while True:
                     "\n[2] ---> Ordem por ano" \
                     "\n --> "))
                     # Menu de opções sobre a ordem de listagem do catálogo
-                except:
+                except ValueError:
                     print("Valor inválido! Tente novamente.\n")
                     continue
 
@@ -302,12 +314,8 @@ while True:
                 while True:
                     try:
                         isbn = int(input("\n- Insira o ISBN do livro: "))
-                    except:
+                    except ValueError:
                         print(f"Não é um ISBN com formato válido!\n")
-                        continue
-
-                    if len(str(isbn)) != 13: # Se o tamanho (número de dígitos) do ISBN for diferente de 13
-                        print("ISBN inválido!\n")
                         continue
 
                     print(descadastrar_livro(isbn)) # Chama a função de descadastro de livro
